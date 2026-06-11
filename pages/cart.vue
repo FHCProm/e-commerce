@@ -33,15 +33,16 @@
 import { computed } from 'vue'
 import { useCart } from '~/composables/useCart'
 
-// Access cart state and actions from your composable
-const { items, addItem, removeItem, updateQty } = useCart()
+// Destructure cart state and methods
+const { cart, removeItem, updateQty } = useCart()
+const items = cart
 
 // Compute total price
 const total = computed(() => {
   return items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
-// Helper to format price (adjust currency as needed)
+// Format price helper
 const formatPrice = (price) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
 }
@@ -58,11 +59,12 @@ const decreaseQty = (item) => {
   }
 }
 
-// Remove item by id and size (to uniquely identify)
-const handleremoveItem = (id, size) => {
+// Remove item by id and size
+const handleRemoveItem = (id, size) => {
   removeItem(id, size)
 }
 </script>
+
 
 <style scoped>
 /* Your existing styles */
