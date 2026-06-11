@@ -1,13 +1,13 @@
 <template>
   <header class="site-header">
     <div class="container header-row">
-      <div class="brand">
+      <div class="brand" @click="goToHome">
         <img src="/images/index/logo.png" alt="Glove Co. logo" class="logo" />
         <h1 class="site-name">Glove Co.</h1>
       </div>
 
       <nav class="main-nav">
-        <button class="nav-btn" @click="goToShop">Shop</button>
+        <button class="nav-btn" @click="goToProductList">Shop</button>
         <button class="nav-btn" @click="goToAbout">About</button>
         <button class="nav-btn" @click="goToContactUs">Contact</button>
       </nav>
@@ -38,7 +38,7 @@ function goToCart() {
   router.push('/cart')
 }
 
-function goToShop() {
+function goToHome() {
   router.push('/')
 }
 
@@ -48,6 +48,10 @@ function goToAbout() {
 
 function goToContactUs() {
   router.push('/contactUs')
+}
+
+function goToProductList() {
+  router.push('/productList')
 }
 
 </script>
