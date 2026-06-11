@@ -41,7 +41,7 @@ defineEmits(['open-cart', 'scroll-to-products'])
   padding: 0.75rem 0;
 }
 .brand { display: flex; align-items: center; gap: 0.5rem; }
-.logo { width: 42px; height: 42px; object-fit: contain; }
+.logo { width: 100px; height: 42px; object-fit: contain; }
 .site-name { font-size: 1.1rem; margin: 0; }
 .main-nav .nav-btn { margin: 0 0.25rem; background: transparent; border: none; cursor: pointer; }
 .actions { display: flex; gap: 1rem; align-items: center; }
