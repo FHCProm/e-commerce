@@ -8,8 +8,8 @@
 
       <nav class="main-nav">
         <button class="nav-btn" @click="goToShop">Shop</button>
-        <button class="nav-btn">About</button>
-        <button class="nav-btn">Contact</button>
+        <button class="nav-btn" @click="goToAbout">About</button>
+        <button class="nav-btn" @click="goToContactUs">Contact</button>
       </nav>
 
       <div class="actions">
@@ -42,6 +42,13 @@ function goToShop() {
   router.push('/')
 }
 
+function goToAbout() {
+  router.push('/about')
+}
+
+function goToContactUs() {
+  router.push('/contactUs')
+}
 
 </script>
 
