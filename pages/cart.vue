@@ -7,18 +7,18 @@
     </div>
 
     <ul v-else class="cart-items">
-      <li v-for="item in items" :key="item.id" class="cart-item">
+      <li v-for="item in items" :key="item.id + '-' + item.size" class="cart-item">
         <div class="item-info">
           <strong>{{ item.name }}</strong>
           <p>Price: {{ formatPrice(item.price) }}</p>
           <p>Quantity: 
             <button @click="decreaseQty(item)">-</button>
-            {{ item.qty }}
+            {{ item.quantity }}
             <button @click="increaseQty(item)">+</button>
           </p>
-          <p>Subtotal: {{ formatPrice(item.price * item.qty) }}</p>
+          <p>Subtotal: {{ formatPrice(item.price * item.quantity) }}</p>
         </div>
-        <button @click="removeItem(item.id)" class="remove-btn">Remove</button>
+        <button @click="handleremoveItem(item.id, item.size)" class="remove-btn">Remove</button>
       </li>
     </ul>
 
@@ -31,14 +31,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import useCart from '~/composables/useCart'
+import { useCart } from '~/composables/useCart'
 
 // Access cart state and actions from your composable
 const { items, addItem, removeItem, updateQty } = useCart()
 
 // Compute total price
 const total = computed(() => {
-  return items.value.reduce((sum, item) => sum + item.price * item.qty, 0)
+  return items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
 // Helper to format price (adjust currency as needed)
@@ -48,18 +48,24 @@ const formatPrice = (price) => {
 
 // Increase quantity by 1
 const increaseQty = (item) => {
-  updateQty(item.id, item.qty + 1)
+  updateQty(item.id, item.size, item.quantity + 1)
 }
 
 // Decrease quantity by 1, minimum 1
 const decreaseQty = (item) => {
-  if (item.qty > 1) {
-    updateQty(item.id, item.qty - 1)
+  if (item.quantity > 1) {
+    updateQty(item.id, item.size, item.quantity - 1)
   }
+}
+
+// Remove item by id and size (to uniquely identify)
+const handleremoveItem = (id, size) => {
+  removeItem(id, size)
 }
 </script>
 
 <style scoped>
+/* Your existing styles */
 .cart-page {
   max-width: 800px;
   margin: 2rem auto;

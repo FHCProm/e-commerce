@@ -146,6 +146,18 @@
       </div>
     </div>
 
+    <!-- Quantity selection below size -->
+    <div class="quantity-selection" style="margin-top: 15px;">
+      <label for="quantity">Quantity:</label>
+      <input
+        id="quantity"
+        type="number"
+        min="1"
+        v-model.number="selectedQuantity"
+        style="width: 60px; margin-left: 5px;"
+      />
+    </div>
+
     <!-- Add to Cart button disabled if no size selected -->
     <button
       :disabled="!selectedSize"
@@ -154,15 +166,16 @@
     >
       Add to Cart
     </button>
-   
   </div>
-  
 </div>
+
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { useCart } from '~/composables/useCart'  // fix path if needed
 
+// Carousel slides and logic (unchanged)
 const slides = [
   {
     title: 'Premium Gloves for Every Use',
@@ -188,48 +201,22 @@ const slides = [
     image: '/images/index/heavy_duty_work_gloves_carousel.png',
   },
 ]
-
 const currentIndex = ref(0)
 const track = ref(null)
-
 const trackStyle = computed(() => ({
   transform: `translateX(-${currentIndex.value * 100}%)`,
   transition: 'transform 420ms cubic-bezier(.2,.9,.3,1)',
 }))
-
-function nextSlide() {
-  currentIndex.value = (currentIndex.value + 1) % slides.length
-}
-function prevSlide() {
-  currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length
-}
-function goToSlide(i) {
-  currentIndex.value = i
-}
-
-function onPrimaryCta() {
-  scrollToProducts()
-}
-function onSecondaryCta() {
-  scrollToProducts()
-}
-
-/* Autoplay */
+function nextSlide() { currentIndex.value = (currentIndex.value + 1) % slides.length }
+function prevSlide() { currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length }
+function goToSlide(i) { currentIndex.value = i }
+function onPrimaryCta() { scrollToProducts() }
+function onSecondaryCta() { scrollToProducts() }
 let intervalId = null
-function startAutoplay() {
-  stopAutoplay()
-  intervalId = setInterval(nextSlide, 5000)
-}
-function stopAutoplay() {
-  if (intervalId) {
-    clearInterval(intervalId)
-    intervalId = null
-  }
-}
+function startAutoplay() { stopAutoplay(); intervalId = setInterval(nextSlide, 5000) }
+function stopAutoplay() { if (intervalId) { clearInterval(intervalId); intervalId = null } }
 onMounted(() => startAutoplay())
 onUnmounted(() => stopAutoplay())
-
-/* Basic touch/swipe */
 const touchStartX = ref(0)
 const touchDeltaX = ref(0)
 function onTouchStart(e) {
@@ -243,11 +230,8 @@ function onTouchMove(e) {
 }
 function onTouchEnd() {
   const threshold = 50
-  if (touchDeltaX.value > threshold) {
-    prevSlide()
-  } else if (touchDeltaX.value < -threshold) {
-    nextSlide()
-  }
+  if (touchDeltaX.value > threshold) prevSlide()
+  else if (touchDeltaX.value < -threshold) nextSlide()
   touchDeltaX.value = 0
   startAutoplay()
 }
@@ -256,7 +240,7 @@ function onPointerDown() {
   setTimeout(startAutoplay, 3000)
 }
 
-/* Products, cart, filters (unchanged) */
+// Products and filters
 const products = ref([
   { id: 1, name: 'Nitrile Exam Gloves (Powder-Free)', short: 'Medical-grade, tactile sensitivity.', full: 'Disposable nitrile gloves ideal for medical, laboratory, and food handling.', price: 12.99, image: '/images/index/nitrile_blue.JPG', type: 'nitrile', sizes: ['S','M','L'] },
   { id: 2, name: 'Latex Surgical Gloves', short: 'Comfort fit and excellent dexterity.', full: 'High-quality latex gloves for medical use.', price: 14.99, image: '/images/index/latex-white.png', type: 'latex', sizes: ['S','M','L','XL'] },
@@ -265,37 +249,54 @@ const products = ref([
 
 const filters = reactive({ type: '', size: '' })
 const search = ref('')
-const cart = ref([])
-const cartOpen = ref(false)
 const quickViewProduct = ref(null)
+const selectedSize = ref(null)
+const selectedQuantity = ref(1)
+const availableSizes = ref(['S', 'M', 'L', 'XL'])
+
+// Use cart composable for shared cart state and functions
+const { cart, addToCart } = useCart()
 
 const cartCount = computed(() => cart.value.length)
-const cartTotal = computed(() => cart.value.reduce((s, i) => s + i.price, 0))
+const cartTotal = computed(() => cart.value.reduce((s, i) => s + i.price * i.quantity, 0))
 
-// Reactive state for selected size in modal
-const selectedSize = ref(null)
+// Watch quickViewProduct to update available sizes and reset selected size
+watch(
+  () => quickViewProduct.value,
+  (newProduct) => {
+    selectedSize.value = null
+    selectedQuantity.value = 1
+    if (newProduct && newProduct.sizes && newProduct.sizes.length) {
+      availableSizes.value = newProduct.sizes
+    } else {
+      availableSizes.value = ['S', 'M', 'L', 'XL']
+    }
+  },
+  { immediate: true }
+)
 
-
-function addToCart(product) {
-  if (!product.size) {
-    alert('Please select a size before adding to cart.')
-    return
-  }
-  cart.value.push({ id: product.id, name: product.name, price: product.price, size: product.size })
-  alert(`${product.name} (${product.size}) added to cart.`)
-  quickViewProduct.value = null // close modal after adding
-}
-
-function addToCartFromModal() {
+function addToCartWithSize() {
   if (!selectedSize.value) {
     alert('Please select a size before adding to cart.')
     return
   }
-  const productWithSize = {
+  if (!selectedQuantity.value || selectedQuantity.value < 1) {
+    alert('Please select a valid quantity before adding to cart.')
+    return
+  }
+
+  const productToAdd = {
     ...quickViewProduct.value,
     size: selectedSize.value,
+    quantity: selectedQuantity.value,
   }
-  addToCart(productWithSize)
+
+  addToCart(productToAdd)
+
+  // Reset selections and close modal
+  selectedSize.value = null
+  selectedQuantity.value = 1
+  quickViewProduct.value = null
 }
 
 function openCart() { cartOpen.value = true }
@@ -315,41 +316,8 @@ const filteredProducts = computed(() => {
     return true
   })
 })
-
-
-
-const availableSizes = ref(['S', 'M', 'L', 'XL'])
-
-// Reset selected size when quickViewProduct changes
-watch(
-  () => quickViewProduct.value,
-  (newProduct) => {
-    selectedSize.value = null
-    if (newProduct && newProduct.sizes && newProduct.sizes.length) {
-      availableSizes.value = newProduct.sizes
-    } else {
-      availableSizes.value = ['S', 'M', 'L', 'XL']
-    }
-  },
-  { immediate: true }
-)
-
-function addToCartWithSize() {
-  if (!selectedSize.value) {
-    alert('Please select a size before adding to cart.')
-    return
-  }
-  const productWithSize = {
-    ...quickViewProduct.value,
-    size: selectedSize.value,
-    qty: 1,
-  }
-  addToCart(productWithSize)
-  quickViewProduct.value = null // close modal
-}
-
-
 </script>
+
 
 
 
@@ -406,9 +374,11 @@ function addToCartWithSize() {
 
 /* left text and right image widths (as a centered group) */
 .hero-copy {
-  flex: 0 1 auto;
-  max-width: 520px;
-  color: #1a202c;
+  display: flex;
+  flex-direction: column; /* stack text + button */
+  align-items: center;    /* center horizontally */
+  justify-content: center;/* center vertically if needed */
+  text-align: center;     /* ensure text aligns too */
 }
 .hero-copy h2 {
   font-size: 2.1rem;
@@ -531,6 +501,11 @@ function addToCartWithSize() {
   .hero-copy p {
     font-size: 0.98rem;
   }
+
+  .hero-copy button {
+  margin: 20px auto; /* auto centers horizontally */
+}
+
   .hero-media {
     max-width: 280px;
   }
@@ -720,6 +695,47 @@ function addToCartWithSize() {
   object-fit: cover;
   border-radius: 6px;
 }
+
+/* Size selection container */
+.size-selection {
+  margin-bottom: 10px;
+}
+
+/* Quantity selection container */
+.quantity-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px; /* space below quantity before Add to Cart button */
+}
+
+/* Quantity input styling */
+.quantity-selection input[type="number"] {
+  width: 60px;
+  padding: 6px 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+/* Focus style for quantity input */
+.quantity-selection input[type="number"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Hide default number input arrows in Webkit browsers */
+.quantity-selection input[type="number"]::-webkit-inner-spin-button,
+.quantity-selection input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+
 
 /* Size selection styles */
 .size-selection {

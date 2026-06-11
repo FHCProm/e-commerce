@@ -1,37 +1,48 @@
-import { computed } from 'vue'
-import { useState } from '#app'  // Nuxt 3 useState for global reactive state
+export function useCart() {
+  // useState creates a global reactive state scoped to the user session
+  const cart = useState('cart', () => [])
 
-export default function useCart() {
-  // Shared reactive cart items state
-  const items = useState('cart', () => [])
+  function addToCart(product: {
+    id: number | string
+    name: string
+    price: number
+    size: string
+    quantity: number
+  }) {
+    if (!product.size) {
+      alert('Please select a size before adding to cart.')
+      return
+    }
+    if (!product.quantity || product.quantity < 1) {
+      alert('Please select a valid quantity before adding to cart.')
+      return
+    }
 
-  // Compute total price of items in cart
-  const total = computed(() =>
-    items.value.reduce((sum, item) => sum + (item.price * (item.qty ?? 1)), 0)
-  )
+    const existingIndex = cart.value.findIndex(
+      (item) => item.id === product.id && item.size === product.size
+    )
 
-  // Add an item to the cart; if item exists, increase qty
-  function addItem(newItem) {
-    const existing = items.value.find(i => i.id === newItem.id)
-    if (existing) {
-      existing.qty = (existing.qty ?? 1) + (newItem.qty ?? 1)
+    if (existingIndex !== -1) {
+      cart.value[existingIndex].quantity += product.quantity
     } else {
-      items.value.push({ ...newItem, qty: newItem.qty ?? 1 })
+      cart.value.push({ ...product })
     }
+
+    alert(`${product.name} (${product.size}) x${product.quantity} added to cart.`)
   }
 
-  // Remove item by id
-  function removeItem(id) {
-    items.value = items.value.filter(i => i.id !== id)
+  function removeFromCart(index: number) {
+    cart.value.splice(index, 1)
   }
 
-  // Update quantity of an item by id
-  function updateQty(id, qty) {
-    const item = items.value.find(i => i.id === id)
-    if (item && qty > 0) {
-      item.qty = qty
-    }
+  function clearCart() {
+    cart.value = []
   }
 
-  return { items, total, addItem, removeItem, updateQty }
+  return {
+    cart,
+    addToCart,
+    removeFromCart,
+    clearCart,
+  }
 }
