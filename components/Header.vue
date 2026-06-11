@@ -14,7 +14,7 @@
 
       <div class="actions">
         <div class="trust">Free shipping over $50</div>
-        <button class="cart-btn" @click="$emit('open-cart')">
+        <button class="cart-btn" @click="goToCart">
           Cart ({{ cartCount }})
         </button>
       </div>
@@ -23,10 +23,17 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+
 const props = defineProps({
   cartCount: { type: Number, default: 0 }
 })
-defineEmits(['open-cart', 'scroll-to-products'])
+
+const router = useRouter()
+
+function goToCart() {
+  router.push('/cart')
+}
 </script>
 
 <style scoped>

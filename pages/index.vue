@@ -95,7 +95,7 @@
           <p class="product-sub">{{ product.short }}</p>
           <p class="price">${{ product.price.toFixed(2) }}</p>
           <div class="product-actions">
-            <button class="add" @click="addToCart(product)">Add to Cart</button>
+          
             <button class="view" @click="openQuickView(product)">Quick View</button>
           </div>
         </div>
@@ -122,20 +122,46 @@
     </div>
   </aside>
 
-  <div class="modal" v-if="quickViewProduct">
-    <div class="modal-inner">
-      <button class="close" @click="quickViewProduct = null">×</button>
-      <img :src="quickViewProduct.image" :alt="quickViewProduct.name" />
-      <h3>{{ quickViewProduct.name }}</h3>
-      <p>{{ quickViewProduct.full }}</p>
-      <p class="price">${{ quickViewProduct.price.toFixed(2) }}</p>
-      <button @click="addToCart(quickViewProduct)">Add to Cart</button>
+<div class="modal" v-if="quickViewProduct">
+  <div class="modal-inner">
+    <button class="close" @click="quickViewProduct = null">×</button>
+    <img :src="quickViewProduct.image" :alt="quickViewProduct.name" />
+    <h3>{{ quickViewProduct.name }}</h3>
+    <p>{{ quickViewProduct.full }}</p>
+    <p class="price">${{ quickViewProduct.price.toFixed(2) }}</p>
+
+    <!-- Size selection -->
+    <div class="size-selection">
+      <label>Select Size:</label>
+      <div class="sizes">
+        <button
+          v-for="size in availableSizes"
+          :key="size"
+          :class="['size-btn', { selected: selectedSize === size }]"
+          @click="selectedSize = size"
+          type="button"
+        >
+          {{ size }}
+        </button>
+      </div>
     </div>
+
+    <!-- Add to Cart button disabled if no size selected -->
+    <button
+      :disabled="!selectedSize"
+      @click="addToCartWithSize"
+      class="add-to-cart-btn"
+    >
+      Add to Cart
+    </button>
+   
   </div>
+  
+</div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 
 const slides = [
   {
@@ -246,10 +272,32 @@ const quickViewProduct = ref(null)
 const cartCount = computed(() => cart.value.length)
 const cartTotal = computed(() => cart.value.reduce((s, i) => s + i.price, 0))
 
+// Reactive state for selected size in modal
+const selectedSize = ref(null)
+
+
 function addToCart(product) {
-  cart.value.push({ id: product.id, name: product.name, price: product.price, size: null })
-  alert(`${product.name} added to cart.`)
+  if (!product.size) {
+    alert('Please select a size before adding to cart.')
+    return
+  }
+  cart.value.push({ id: product.id, name: product.name, price: product.price, size: product.size })
+  alert(`${product.name} (${product.size}) added to cart.`)
+  quickViewProduct.value = null // close modal after adding
 }
+
+function addToCartFromModal() {
+  if (!selectedSize.value) {
+    alert('Please select a size before adding to cart.')
+    return
+  }
+  const productWithSize = {
+    ...quickViewProduct.value,
+    size: selectedSize.value,
+  }
+  addToCart(productWithSize)
+}
+
 function openCart() { cartOpen.value = true }
 function openQuickView(product) { quickViewProduct.value = product }
 
@@ -267,96 +315,454 @@ const filteredProducts = computed(() => {
     return true
   })
 })
+
+
+
+const availableSizes = ref(['S', 'M', 'L', 'XL'])
+
+// Reset selected size when quickViewProduct changes
+watch(
+  () => quickViewProduct.value,
+  (newProduct) => {
+    selectedSize.value = null
+    if (newProduct && newProduct.sizes && newProduct.sizes.length) {
+      availableSizes.value = newProduct.sizes
+    } else {
+      availableSizes.value = ['S', 'M', 'L', 'XL']
+    }
+  },
+  { immediate: true }
+)
+
+function addToCartWithSize() {
+  if (!selectedSize.value) {
+    alert('Please select a size before adding to cart.')
+    return
+  }
+  const productWithSize = {
+    ...quickViewProduct.value,
+    size: selectedSize.value,
+    qty: 1,
+  }
+  addToCart(productWithSize)
+  quickViewProduct.value = null // close modal
+}
+
+
 </script>
 
+
+
 <style scoped>
-:root{
-  --primary:#1a73e8; --accent:#0b63c6; --muted:#6b7280; --container:1100px;
+
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 1rem;
 }
-.container{ max-width:var(--container); margin:0 auto; padding:0 1rem; }
 
 /* HERO */
-.hero{ background:#f7fbff; padding:2rem 0; }
-.hero-inner{ position:relative; overflow:hidden; max-width:var(--container); margin:0 auto; padding:1rem 0; }
+.hero {
+  background: #f7fbff;
+  padding: 2rem 0;
+}
+.hero-inner {
+  position: relative;
+  overflow: hidden;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 1rem 0;
+}
 
 /* track */
-.slides-track{ display:flex; width:100%; will-change:transform; }
+.slides-track {
+  display: flex;
+  width: 100%;
+  will-change: transform;
+}
 
 /* each slide is full panel */
-.slide{ flex:0 0 100%; display:flex; justify-content:center; align-items:center; min-height:340px; box-sizing:border-box; padding:0.5rem 0; }
+.slide {
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 340px;
+  box-sizing: border-box;
+  padding: 0.5rem 0;
+}
 
 /* inner content (group) centered as a unit */
-.slide-inner{
-  width:100%;
-  max-width:900px;       /* limit group width so it is centered in panel */
-  display:flex;
-  gap:1.25rem;           /* small gap between text and image */
-  align-items:center;
-  justify-content:center; /* center the group horizontally */
-  padding:0.75rem 1rem;
-  box-sizing:border-box;
+.slide-inner {
+  width: 100%;
+  max-width: 900px; /* limit group width so it is centered in panel */
+  display: flex;
+  gap: 1.25rem; /* small gap between text and image */
+  align-items: center;
+  justify-content: center; /* center the group horizontally */
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
 }
 
 /* left text and right image widths (as a centered group) */
-.hero-copy{ flex:0 1 auto; max-width:520px; color:#1a202c; }
-.hero-copy h2{ font-size:2.1rem; margin:0 0 0.6rem; line-height:1.12; }
-.hero-copy p{ font-size:1.02rem; margin:0 0 0.9rem; color:#4a5568; }
-.hero-ctas{ display:flex; gap:0.6rem; flex-wrap:wrap; }
-.hero-ctas button{ min-width:120px; padding:0.55rem 0.9rem; border-radius:8px; font-weight:600; border:none; cursor:pointer; }
-.hero-ctas .primary{ background:var(--primary); color:#fff; }
-.hero-ctas .secondary{ background:transparent; border:2px solid var(--primary); color:var(--primary); }
-.hero-benefits{ display:flex; gap:1rem; list-style:none; padding:0; margin:0.8rem 0 0; color:var(--muted); font-weight:600; }
+.hero-copy {
+  flex: 0 1 auto;
+  max-width: 520px;
+  color: #1a202c;
+}
+.hero-copy h2 {
+  font-size: 2.1rem;
+  margin: 0 0 0.6rem;
+  line-height: 1.12;
+}
+.hero-copy p {
+  font-size: 1.02rem;
+  margin: 0 0 0.9rem;
+  color: #4a5568;
+}
+.hero-ctas {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.hero-ctas button {
+  min-width: 120px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+.hero-ctas .primary {
+  background: var(--primary);
+  color: #fff;
+}
+.hero-ctas .secondary {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+}
+.hero-benefits {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-weight: 600;
+}
 
 /* image block a bit smaller to sit close to text */
-.hero-media{ flex:0 1 320px; max-width:320px; display:flex; justify-content:center; }
-.hero-media img{ width:100%; height:auto; border-radius:12px; box-shadow:0 12px 28px rgba(8,20,40,0.08); display:block; }
+.hero-media {
+  flex: 0 1 320px;
+  max-width: 320px;
+  display: flex;
+  justify-content: center;
+}
+.hero-media img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(8, 20, 40, 0.08);
+  display: block;
+}
 
 /* controls/dots */
-.carousel-nav{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(26,115,232,0.85); border:none; color:#fff; width:42px; height:42px; border-radius:50%; z-index:30; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-.carousel-nav.prev{ left:12px; } .carousel-nav.next{ right:12px; }
-.carousel-dots{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:0.6rem; z-index:30; }
-.carousel-dots button{ width:12px; height:12px; border-radius:50%; border:none; background:#cbd5e1; cursor:pointer; }
-.carousel-dots button.active{ background:var(--primary); }
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(26, 115, 232, 0.85);
+  border: none;
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.carousel-nav.prev {
+  left: 12px;
+}
+.carousel-nav.next {
+  right: 12px;
+}
+.carousel-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.6rem;
+  z-index: 30;
+}
+.carousel-dots button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: #cbd5e1;
+  cursor: pointer;
+}
+.carousel-dots button.active {
+  background: var(--primary);
+}
 
 /* MOBILE: stack content, center, keep image close to text */
-@media (max-width:768px){
-  .slide-inner{ flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; padding:1rem; text-align:center; max-width:92%; }
-  .hero-copy{ max-width:100%; }
-  .hero-copy h2{ font-size:1.5rem; }
-  .hero-copy p{ font-size:0.98rem; }
-  .hero-media{ max-width:280px; }
-  .carousel-nav.prev{ left:8px; } .carousel-nav.next{ right:8px; }
-  .carousel-dots{ bottom:8px; }
+@media (max-width: 768px) {
+  .slide-inner {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    max-width: 92%;
+  }
+  .hero-copy {
+    max-width: 100%;
+  }
+  .hero-copy h2 {
+    font-size: 1.5rem;
+  }
+  .hero-copy p {
+    font-size: 0.98rem;
+  }
+  .hero-media {
+    max-width: 280px;
+  }
+  .carousel-nav.prev {
+    left: 8px;
+  }
+  .carousel-nav.next {
+    right: 8px;
+  }
+  .carousel-dots {
+    bottom: 8px;
+  }
 }
 
 /* rest of page styles (unchanged) */
-.features{ display:flex; gap:1rem; justify-content:center; padding:1rem 0; color:var(--muted); }
-.products{ padding:1.5rem 0; }
-.products-header{ display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
-.filters{ display:flex; gap:0.5rem; align-items:center; }
-.filters select, .filters input{ padding:0.4rem; border-radius:6px; border:1px solid #ddd; }
-.product-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
-.product-card{ background:#fff; border:1px solid #eee; border-radius:8px; padding:0.75rem; display:flex; gap:0.75rem; align-items:flex-start; }
-.product-image{ width:100px; height:100px; object-fit:cover; border-radius:6px; }
-.product-info{ flex:1; }
-.product-name{ margin:0; font-size:1rem; }
-.product-sub{ color:var(--muted); font-size:0.9rem; margin:0.25rem 0; }
-.price{ font-weight:700; margin-top:0.5rem; }
-.product-actions{ display:flex; gap:0.5rem; margin-top:0.6rem; }
-.add{ background:var(--primary); color:#fff; border:none; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; }
-.view{ background:transparent; border:1px solid #ddd; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; }
+.features {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem 0;
+  color: var(--muted);
+}
+.products {
+  padding: 1.5rem 0;
+}
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filters select,
+.filters input {
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.product-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.product-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.product-info {
+  flex: 1;
+}
+.product-name {
+  margin: 0;
+  font-size: 1rem;
+}
+.product-sub {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+.price {
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+.product-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.add {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.view {
+  background: transparent;
+  border: 1px solid #ddd;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-.cart-drawer{ position:fixed; right:-360px; top:0; width:320px; height:100vh; background:#fff; box-shadow:-8px 0 24px rgba(15,15,15,0.08); transition:right 0.25s ease; z-index:60; padding:1rem; display:flex; flex-direction:column; }
-.cart-drawer.open{ right:0; }
-.cart-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
-.cart-empty{ color:var(--muted); padding:1rem 0; }
-.cart-items{ list-style:none; padding:0; margin:0; flex:1 1 auto; overflow:auto; }
-.cart-items li{ display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px dashed #f1f1f1; }
-.cart-footer{ margin-top:0.5rem; display:flex; flex-direction:column; gap:0.5rem; }
-.checkout{ background:var(--accent); color:#fff; border:none; padding:0.6rem; border-radius:6px; cursor:pointer; }
+.cart-drawer {
+  position: fixed;
+  right: -360px;
+  top: 0;
+  width: 320px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -8px 0 24px rgba(15, 15, 15, 0.08);
+  transition: right 0.25s ease;
+  z-index: 60;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.cart-drawer.open {
+  right: 0;
+}
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.cart-empty {
+  color: var(--muted);
+  padding: 1rem 0;
+}
+.cart-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+.cart-items li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed #f1f1f1;
+}
+.cart-footer {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.checkout {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-.modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,10,10,0.45); z-index:70; }
-.modal-inner{ background:#fff; padding:1.25rem; border-radius:8px; max-width:720px; width:90%; position:relative; }
-.modal .close{ position:absolute; right:0.5rem; top:0.5rem; background:transparent; border:none; font-size:1.5rem; cursor:pointer; }
-.modal img{ width:160px; height:160px; object-fit:cover; border-radius:6px; }
+/* Modal styles */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.45);
+  z-index: 70;
+}
+.modal-inner {
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 8px;
+  max-width: 720px;
+  width: 90%;
+  position: relative;
+}
+.modal .close {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.modal img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Size selection styles */
+.size-selection {
+  margin: 1rem 0;
+}
+.sizes {
+  display: flex;
+  gap: 0.5rem;
+}
+.size-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
+}
+.size-btn.selected {
+  border-color: var(--primary);
+  background: #e8f0fe;
+  font-weight: bold;
+}
+.size-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.add-to-cart-btn {
+  display: inline-block; /* Ensure button is always displayed */
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  background: var(--primary);
+  color: black;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.add-to-cart-btn:disabled {
+  opacity: 0.6;           /* Visually indicate disabled state */
+  cursor: not-allowed;    /* Change cursor to indicate disabled */
+  pointer-events: none;   /* Prevent clicks */
+  /* DO NOT use display:none or visibility:hidden */
+}
+
 </style>
