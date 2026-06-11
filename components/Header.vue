@@ -7,7 +7,7 @@
       </div>
 
       <nav class="main-nav">
-        <button class="nav-btn">Shop</button>
+        <button class="nav-btn" @click="goToShop">Shop</button>
         <button class="nav-btn">About</button>
         <button class="nav-btn">Contact</button>
       </nav>
@@ -22,18 +22,27 @@
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useRouter } from 'vue-router'
-
-const props = defineProps({
-  cartCount: { type: Number, default: 0 }
-})
+import { useCart } from '~/composables/useCart'  // Adjust path if needed
+import { watch } from 'vue'
 
 const router = useRouter()
+
+// Use the composable to get reactive cart and cartCount
+const { cartCount } = useCart()
+
+
 
 function goToCart() {
   router.push('/cart')
 }
+
+function goToShop() {
+  router.push('/')
+}
+
+
 </script>
 
 <style scoped>
@@ -47,11 +56,41 @@ function goToCart() {
   justify-content: space-between;
   padding: 0.75rem 0;
 }
-.brand { display: flex; align-items: center; gap: 0.5rem; }
-.logo { width: 100px; height: 42px; object-fit: contain; }
-.site-name { font-size: 1.1rem; margin: 0; }
-.main-nav .nav-btn { margin: 0 0.25rem; background: transparent; border: none; cursor: pointer; }
-.actions { display: flex; gap: 1rem; align-items: center; }
-.cart-btn { background: var(--primary, #1a73e8); color: #fff; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer; }
-.trust { color: var(--muted, #6b7280); font-size: 0.9rem; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.logo {
+  width: 100px;
+  height: 42px;
+  object-fit: contain;
+}
+.site-name {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.main-nav .nav-btn {
+  margin: 0 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.cart-btn {
+  background: var(--primary, #1a73e8);
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.trust {
+  color: var(--muted, #6b7280);
+  font-size: 0.9rem;
+}
 </style>

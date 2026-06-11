@@ -1,14 +1,10 @@
+import { useState } from '#app'
+import { computed } from 'vue'
+
 export function useCart() {
-  // useState creates a global reactive state scoped to the user session
   const cart = useState('cart', () => [])
 
-  function addToCart(product: {
-    id: number | string
-    name: string
-    price: number
-    size: string
-    quantity: number
-  }) {
+  function addToCart(product) {
     if (!product.size) {
       alert('Please select a size before adding to cart.')
       return
@@ -31,18 +27,35 @@ export function useCart() {
     alert(`${product.name} (${product.size}) x${product.quantity} added to cart.`)
   }
 
-  function removeFromCart(index: number) {
-    cart.value.splice(index, 1)
+  // Update quantity or remove if quantity <= 0
+  function updateQty(id, size, quantity) {
+    const index = cart.value.findIndex(item => item.id === id && item.size === size)
+    if (index === -1) return
+
+    if (quantity <= 0) {
+      cart.value.splice(index, 1)
+    } else {
+      cart.value[index].quantity = quantity
+    }
   }
 
-  function clearCart() {
-    cart.value = []
+  // Remove item by id and size
+  function removeItem(id, size) {
+    const index = cart.value.findIndex(item => item.id === id && item.size === size)
+    if (index !== -1) {
+      cart.value.splice(index, 1)
+    }
   }
+
+  const cartCount = computed(() =>
+    cart.value.reduce((total, item) => total + item.quantity, 0)
+  )
 
   return {
     cart,
     addToCart,
-    removeFromCart,
-    clearCart,
+    updateQty,
+    removeItem,
+    cartCount,
   }
 }

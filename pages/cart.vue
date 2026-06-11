@@ -12,13 +12,14 @@
           <strong>{{ item.name }}</strong>
           <p>Price: {{ formatPrice(item.price) }}</p>
           <p>Quantity: 
-            <button @click="decreaseQty(item)">-</button>
+            <button @click="decreaseQty(item)" :disabled="item.quantity <= 1">-</button>
             {{ item.quantity }}
             <button @click="increaseQty(item)">+</button>
           </p>
           <p>Subtotal: {{ formatPrice(item.price * item.quantity) }}</p>
         </div>
-        <button @click="handleremoveItem(item.id, item.size)" class="remove-btn">Remove</button>
+       <button @click="handleRemoveItem(item.id, item.size)" class="remove-btn">Remove</button>
+
       </li>
     </ul>
 
@@ -33,40 +34,86 @@
 import { computed } from 'vue'
 import { useCart } from '~/composables/useCart'
 
-// Destructure cart state and methods
 const { cart, removeItem, updateQty } = useCart()
 const items = cart
 
-// Compute total price
 const total = computed(() => {
   return items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
-// Format price helper
 const formatPrice = (price) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
 }
 
-// Increase quantity by 1
 const increaseQty = (item) => {
   updateQty(item.id, item.size, item.quantity + 1)
 }
 
-// Decrease quantity by 1, minimum 1
 const decreaseQty = (item) => {
-  if (item.quantity > 1) {
-    updateQty(item.id, item.size, item.quantity - 1)
-  }
+  const newQty = item.quantity - 1
+  updateQty(item.id, item.size, newQty)
 }
 
-// Remove item by id and size
 const handleRemoveItem = (id, size) => {
   removeItem(id, size)
 }
 </script>
 
 
+
 <style scoped>
+
+
+/* Quantity buttons container */
+.item-info p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Style the quantity buttons */
+.item-info button {
+  width: 32px;
+  height: 32px;
+  background-color: #1a73e8; /* Primary blue */
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+/* Hover and active states */
+.item-info button:hover {
+  background-color: #155ab6; /* Darker blue */
+}
+
+.item-info button:active {
+  background-color: #0f3d7a; /* Even darker */
+}
+
+/* Disable button style (optional) */
+.item-info button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
+
+/* Optional: add focus outline for accessibility */
+.item-info button:focus-visible {
+  outline: 2px solid #ffab00;
+  outline-offset: 2px;
+}
+
+
+
 /* Your existing styles */
 .cart-page {
   max-width: 800px;
@@ -125,4 +172,9 @@ const handleRemoveItem = (id, size) => {
 .checkout-btn:hover {
   background: #219150;
 }
+
+
+
+
+
 </style>

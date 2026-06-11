@@ -292,7 +292,7 @@ function addToCartWithSize() {
   }
 
   addToCart(productToAdd)
-  console.log(cart.value)
+  
 
   // Reset selections and close modal
   selectedSize.value = null
