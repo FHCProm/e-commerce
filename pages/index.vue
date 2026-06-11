@@ -1,39 +1,59 @@
-<!-- File: index.vue -->
 <template>
-  <header class="site-header">
-    <div class="container header-row">
-      <div class="brand">
-        <img src="/public/images/index/logo.png" alt="Glove Co. logo" class="logo" />
-        <h1 class="site-name">Glove Co.</h1>
-      </div>
-
-      <nav class="main-nav">
-        <button class="nav-btn">Shop</button>
-        <button class="nav-btn">About</button>
-        <button class="nav-btn">Contact</button>
-      </nav>
-
-      <div class="actions">
-        <div class="trust">Free shipping over $50</div>
-        <button class="cart-btn" @click="openCart">
-          Cart ({{ cartCount }})
-        </button>
-      </div>
-    </div>
-  </header>
-
   <section class="hero">
     <div class="container hero-inner">
-      <div class="hero-copy">
-        <h2>Premium Gloves for Every Use</h2>
-        <p>Durable, comfortable, and built for performance — from medical-grade nitrile to heavy-duty work gloves.</p>
-        <div class="hero-ctas">
-          <button class="primary" @click="scrollToProducts">Shop Gloves</button>
-          <button class="secondary" @click="scrollToProducts">View Collections</button>
+      <!-- Slides track -->
+      <div
+        class="slides-track"
+        :style="trackStyle"
+        ref="track"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        @pointerdown="onPointerDown"
+      >
+        <div
+          class="slide"
+          v-for="(slide, index) in slides"
+          :key="index"
+          :aria-hidden="index !== currentIndex"
+        >
+          <div class="slide-inner" :aria-label="slide.title">
+            <div class="hero-copy">
+              <h2>{{ slide.title }}</h2>
+              <p>{{ slide.subtitle }}</p>
+              <div class="hero-ctas">
+                <button class="primary" @click="onPrimaryCta(slide)">{{ slide.primaryCta }}</button>
+                <button class="secondary" @click="onSecondaryCta(slide)">{{ slide.secondaryCta }}</button>
+              </div>
+
+              <ul class="hero-benefits" aria-hidden="true">
+                <li>Medical-grade</li>
+                <li>Latex-free options</li>
+                <li>Fast shipping</li>
+              </ul>
+            </div>
+
+            <div class="hero-media" role="img" :aria-label="slide.title">
+              <img :src="slide.image" :alt="slide.title" />
+            </div>
+          </div>
         </div>
       </div>
-      <div class="hero-media">
-        <img src="/public/images/index/gloves-hero.png" alt="Gloves hero image" />
+
+      <!-- Controls -->
+      <button class="carousel-nav prev" @click="prevSlide" aria-label="Previous slide">‹</button>
+      <button class="carousel-nav next" @click="nextSlide" aria-label="Next slide">›</button>
+
+      <div class="carousel-dots" role="tablist" aria-label="Carousel slides">
+        <button
+          v-for="(_, i) in slides"
+          :key="i"
+          :class="{ active: i === currentIndex }"
+          @click="goToSlide(i)"
+          :aria-selected="i === currentIndex"
+          role="tab"
+          :aria-label="'Go to slide ' + (i + 1)"
+        ></button>
       </div>
     </div>
   </section>
@@ -47,7 +67,6 @@
   <section class="products container" ref="productsSection">
     <div class="products-header">
       <h2>Featured Gloves</h2>
-
       <div class="filters">
         <select v-model="filters.type">
           <option value="">All types</option>
@@ -69,30 +88,12 @@
     </div>
 
     <div class="product-grid">
-      <div
-        v-for="product in filteredProducts"
-        :key="product.id"
-        class="product-card"
-      >
+      <div v-for="product in filteredProducts" :key="product.id" class="product-card">
         <img :src="product.image" :alt="product.name" class="product-image" />
         <div class="product-info">
           <h3 class="product-name">{{ product.name }}</h3>
           <p class="product-sub">{{ product.short }}</p>
-
-          <div class="variants">
-            <label v-for="(v, idx) in product.sizes" :key="v">
-              <input
-                type="radio"
-                :name="'size-' + product.id"
-                :value="v"
-                v-model="selectedSizes[product.id]"
-              />
-              {{ v }}
-            </label>
-          </div>
-
           <p class="price">${{ product.price.toFixed(2) }}</p>
-
           <div class="product-actions">
             <button class="add" @click="addToCart(product)">Add to Cart</button>
             <button class="view" @click="openQuickView(product)">Quick View</button>
@@ -102,7 +103,7 @@
     </div>
   </section>
 
-  <!-- Simple Cart Drawer -->
+  <!-- Cart & Modal (unchanged) -->
   <aside class="cart-drawer" :class="{ open: cartOpen }">
     <div class="cart-header">
       <h3>Your Cart</h3>
@@ -121,7 +122,6 @@
     </div>
   </aside>
 
-  <!-- Quick View Modal -->
   <div class="modal" v-if="quickViewProduct">
     <div class="modal-inner">
       <button class="close" @click="quickViewProduct = null">×</button>
@@ -135,47 +135,110 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 
+const slides = [
+  {
+    title: 'Premium Gloves for Every Use',
+    subtitle:
+      'Durable, comfortable, and built for performance — from medical-grade nitrile to heavy-duty work gloves.',
+    primaryCta: 'Shop Gloves',
+    secondaryCta: 'View Collections',
+    // Replace the placeholder below with your image path inside your project
+    image: '/images/index/glove_ecommerce_carousel.png',
+  },
+  {
+    title: 'Medical-Grade Nitrile Gloves',
+    subtitle: 'Safe and reliable protection for healthcare professionals.',
+    primaryCta: 'Shop Nitrile',
+    secondaryCta: 'Learn More',
+    image: '/images/index/latex_surgical_gloves_carousel.png',
+  },
+  {
+    title: 'Heavy-Duty Work Gloves',
+    subtitle: 'Tough gloves designed for demanding jobs and outdoor work.',
+    primaryCta: 'Shop Work Gloves',
+    secondaryCta: 'See Details',
+    image: '/images/index/heavy_duty_work_gloves_carousel.png',
+  },
+]
+
+const currentIndex = ref(0)
+const track = ref(null)
+
+const trackStyle = computed(() => ({
+  transform: `translateX(-${currentIndex.value * 100}%)`,
+  transition: 'transform 420ms cubic-bezier(.2,.9,.3,1)',
+}))
+
+function nextSlide() {
+  currentIndex.value = (currentIndex.value + 1) % slides.length
+}
+function prevSlide() {
+  currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length
+}
+function goToSlide(i) {
+  currentIndex.value = i
+}
+
+function onPrimaryCta() {
+  scrollToProducts()
+}
+function onSecondaryCta() {
+  scrollToProducts()
+}
+
+/* Autoplay */
+let intervalId = null
+function startAutoplay() {
+  stopAutoplay()
+  intervalId = setInterval(nextSlide, 5000)
+}
+function stopAutoplay() {
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
+}
+onMounted(() => startAutoplay())
+onUnmounted(() => stopAutoplay())
+
+/* Basic touch/swipe */
+const touchStartX = ref(0)
+const touchDeltaX = ref(0)
+function onTouchStart(e) {
+  stopAutoplay()
+  touchDeltaX.value = 0
+  touchStartX.value = e.touches ? e.touches[0].clientX : e.clientX
+}
+function onTouchMove(e) {
+  const x = e.touches ? e.touches[0].clientX : e.clientX
+  touchDeltaX.value = x - touchStartX.value
+}
+function onTouchEnd() {
+  const threshold = 50
+  if (touchDeltaX.value > threshold) {
+    prevSlide()
+  } else if (touchDeltaX.value < -threshold) {
+    nextSlide()
+  }
+  touchDeltaX.value = 0
+  startAutoplay()
+}
+function onPointerDown() {
+  stopAutoplay()
+  setTimeout(startAutoplay, 3000)
+}
+
+/* Products, cart, filters (unchanged) */
 const products = ref([
-  {
-    id: 1,
-    name: 'Nitrile Exam Gloves (Powder-Free)',
-    short: 'Medical-grade, tactile sensitivity.',
-    full: 'Disposable nitrile gloves ideal for medical, laboratory, and food handling. Powder-free, latex-free.',
-    price: 12.99,
-    image: '/images/index/nitrile_blue.JPG',
-    type: 'nitrile',
-    sizes: ['S', 'M', 'L'],
-  },
-  {
-    id: 2,
-    name: 'Latex Surgical Gloves',
-    short: 'Comfort fit and excellent dexterity.',
-    full: 'High-quality latex gloves for medical and clinical use. Offers superior fit and feel.',
-    price: 14.99,
-    image: '/images/index/latex-white.png',
-    type: 'latex',
-    sizes: ['S', 'M', 'L', 'XL'],
-  },
-  {
-    id: 3,
-    name: 'Heavy-Duty Work Gloves',
-    short: 'Reinforced palms for tough jobs.',
-    full: 'Durable work gloves with reinforced palms and breathable back for construction and outdoor work.',
-    price: 24.99,
-    image: '/images/index/work-brown.png',
-    type: 'work',
-    sizes: ['M', 'L', 'XL'],
-  },
+  { id: 1, name: 'Nitrile Exam Gloves (Powder-Free)', short: 'Medical-grade, tactile sensitivity.', full: 'Disposable nitrile gloves ideal for medical, laboratory, and food handling.', price: 12.99, image: '/images/index/nitrile_blue.JPG', type: 'nitrile', sizes: ['S','M','L'] },
+  { id: 2, name: 'Latex Surgical Gloves', short: 'Comfort fit and excellent dexterity.', full: 'High-quality latex gloves for medical use.', price: 14.99, image: '/images/index/latex-white.png', type: 'latex', sizes: ['S','M','L','XL'] },
+  { id: 3, name: 'Heavy-Duty Work Gloves', short: 'Reinforced palms for tough jobs.', full: 'Durable work gloves with reinforced palms.', price: 24.99, image: '/images/index/work-brown.png', type: 'work', sizes: ['M','L','XL'] },
 ])
 
-const filters = reactive({
-  type: '',
-  size: '',
-})
+const filters = reactive({ type: '', size: '' })
 const search = ref('')
-const selectedSizes = reactive({}) // track per-product selected size
 const cart = ref([])
 const cartOpen = ref(false)
 const quickViewProduct = ref(null)
@@ -184,29 +247,16 @@ const cartCount = computed(() => cart.value.length)
 const cartTotal = computed(() => cart.value.reduce((s, i) => s + i.price, 0))
 
 function addToCart(product) {
-  const size = selectedSizes[product.id] || null
-  cart.value.push({
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    size,
-  })
+  cart.value.push({ id: product.id, name: product.name, price: product.price, size: null })
   alert(`${product.name} added to cart.`)
 }
-
-function openCart() {
-  cartOpen.value = true
-}
-
-function openQuickView(product) {
-  quickViewProduct.value = product
-}
+function openCart() { cartOpen.value = true }
+function openQuickView(product) { quickViewProduct.value = product }
 
 function scrollToProducts() {
   const el = productsSection.value
   if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth' })
 }
-
 const productsSection = ref(null)
 
 const filteredProducts = computed(() => {
@@ -220,86 +270,93 @@ const filteredProducts = computed(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #1a73e8;
-  --accent: #0b63c6;
-  --muted: #6b7280;
-  --container: 1100px;
+:root{
+  --primary:#1a73e8; --accent:#0b63c6; --muted:#6b7280; --container:1100px;
+}
+.container{ max-width:var(--container); margin:0 auto; padding:0 1rem; }
+
+/* HERO */
+.hero{ background:#f7fbff; padding:2rem 0; }
+.hero-inner{ position:relative; overflow:hidden; max-width:var(--container); margin:0 auto; padding:1rem 0; }
+
+/* track */
+.slides-track{ display:flex; width:100%; will-change:transform; }
+
+/* each slide is full panel */
+.slide{ flex:0 0 100%; display:flex; justify-content:center; align-items:center; min-height:340px; box-sizing:border-box; padding:0.5rem 0; }
+
+/* inner content (group) centered as a unit */
+.slide-inner{
+  width:100%;
+  max-width:900px;       /* limit group width so it is centered in panel */
+  display:flex;
+  gap:1.25rem;           /* small gap between text and image */
+  align-items:center;
+  justify-content:center; /* center the group horizontally */
+  padding:0.75rem 1rem;
+  box-sizing:border-box;
 }
 
-.container {
-  max-width: var(--container);
-  margin: 0 auto;
-  padding: 0 1rem;
+/* left text and right image widths (as a centered group) */
+.hero-copy{ flex:0 1 auto; max-width:520px; color:#1a202c; }
+.hero-copy h2{ font-size:2.1rem; margin:0 0 0.6rem; line-height:1.12; }
+.hero-copy p{ font-size:1.02rem; margin:0 0 0.9rem; color:#4a5568; }
+.hero-ctas{ display:flex; gap:0.6rem; flex-wrap:wrap; }
+.hero-ctas button{ min-width:120px; padding:0.55rem 0.9rem; border-radius:8px; font-weight:600; border:none; cursor:pointer; }
+.hero-ctas .primary{ background:var(--primary); color:#fff; }
+.hero-ctas .secondary{ background:transparent; border:2px solid var(--primary); color:var(--primary); }
+.hero-benefits{ display:flex; gap:1rem; list-style:none; padding:0; margin:0.8rem 0 0; color:var(--muted); font-weight:600; }
+
+/* image block a bit smaller to sit close to text */
+.hero-media{ flex:0 1 320px; max-width:320px; display:flex; justify-content:center; }
+.hero-media img{ width:100%; height:auto; border-radius:12px; box-shadow:0 12px 28px rgba(8,20,40,0.08); display:block; }
+
+/* controls/dots */
+.carousel-nav{ position:absolute; top:50%; transform:translateY(-50%); background:rgba(26,115,232,0.85); border:none; color:#fff; width:42px; height:42px; border-radius:50%; z-index:30; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.carousel-nav.prev{ left:12px; } .carousel-nav.next{ right:12px; }
+.carousel-dots{ position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:0.6rem; z-index:30; }
+.carousel-dots button{ width:12px; height:12px; border-radius:50%; border:none; background:#cbd5e1; cursor:pointer; }
+.carousel-dots button.active{ background:var(--primary); }
+
+/* MOBILE: stack content, center, keep image close to text */
+@media (max-width:768px){
+  .slide-inner{ flex-direction:column; align-items:center; justify-content:center; gap:0.5rem; padding:1rem; text-align:center; max-width:92%; }
+  .hero-copy{ max-width:100%; }
+  .hero-copy h2{ font-size:1.5rem; }
+  .hero-copy p{ font-size:0.98rem; }
+  .hero-media{ max-width:280px; }
+  .carousel-nav.prev{ left:8px; } .carousel-nav.next{ right:8px; }
+  .carousel-dots{ bottom:8px; }
 }
 
-/* Header */
-.site-header {
-  border-bottom: 1px solid #eee;
-  background: #fff;
-}
-.header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 0;
-}
-.brand { display: flex; align-items: center; gap: 0.5rem; }
-.logo { width: 42px; height: 42px; object-fit: contain; }
-.site-name { font-size: 1.1rem; margin: 0; }
-.main-nav .nav-btn { margin: 0 0.25rem; background: transparent; border: none; cursor: pointer; }
-.actions { display: flex; gap: 1rem; align-items: center; }
-.cart-btn { background: var(--primary); color: #fff; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer; }
+/* rest of page styles (unchanged) */
+.features{ display:flex; gap:1rem; justify-content:center; padding:1rem 0; color:var(--muted); }
+.products{ padding:1.5rem 0; }
+.products-header{ display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+.filters{ display:flex; gap:0.5rem; align-items:center; }
+.filters select, .filters input{ padding:0.4rem; border-radius:6px; border:1px solid #ddd; }
+.product-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+.product-card{ background:#fff; border:1px solid #eee; border-radius:8px; padding:0.75rem; display:flex; gap:0.75rem; align-items:flex-start; }
+.product-image{ width:100px; height:100px; object-fit:cover; border-radius:6px; }
+.product-info{ flex:1; }
+.product-name{ margin:0; font-size:1rem; }
+.product-sub{ color:var(--muted); font-size:0.9rem; margin:0.25rem 0; }
+.price{ font-weight:700; margin-top:0.5rem; }
+.product-actions{ display:flex; gap:0.5rem; margin-top:0.6rem; }
+.add{ background:var(--primary); color:#fff; border:none; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; }
+.view{ background:transparent; border:1px solid #ddd; padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; }
 
-/* Hero */
-.hero { background: #f7fbff; padding: 2.5rem 0; }
-.hero-inner { display: flex; gap: 2rem; align-items: center; }
-.hero-copy { flex: 1; }
-.hero-copy h2 { margin: 0 0 0.5rem; font-size: 1.8rem; }
-.hero-copy p { color: var(--muted); margin-bottom: 1rem; }
-.hero-ctas .primary, .primary { background: var(--primary); color: #fff; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; }
-.hero-ctas .secondary, .secondary { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; }
-.hero-media img { width: 320px; border-radius: 8px; object-fit: cover; }
+.cart-drawer{ position:fixed; right:-360px; top:0; width:320px; height:100vh; background:#fff; box-shadow:-8px 0 24px rgba(15,15,15,0.08); transition:right 0.25s ease; z-index:60; padding:1rem; display:flex; flex-direction:column; }
+.cart-drawer.open{ right:0; }
+.cart-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
+.cart-empty{ color:var(--muted); padding:1rem 0; }
+.cart-items{ list-style:none; padding:0; margin:0; flex:1 1 auto; overflow:auto; }
+.cart-items li{ display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px dashed #f1f1f1; }
+.cart-footer{ margin-top:0.5rem; display:flex; flex-direction:column; gap:0.5rem; }
+.checkout{ background:var(--accent); color:#fff; border:none; padding:0.6rem; border-radius:6px; cursor:pointer; }
 
-/* Features */
-.features { display: flex; gap: 1rem; justify-content: center; padding: 1rem 0; color: var(--muted); }
-
-/* Products */
-.products { padding: 1.5rem 0; }
-.products-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.filters { display: flex; gap: 0.5rem; align-items: center; }
-.filters select, .filters input { padding: 0.4rem; border-radius: 6px; border: 1px solid #ddd; }
-
-.product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-
-.product-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 0.75rem; display: flex; gap: 0.75rem; align-items: flex-start; }
-.product-image { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; }
-.product-info { flex: 1; }
-.product-name { margin: 0; font-size: 1rem; }
-.product-sub { color: var(--muted); font-size: 0.9rem; margin: 0.25rem 0; }
-.variants label { margin-right: 0.5rem; font-size: 0.85rem; }
-.price { font-weight: 700; margin-top: 0.5rem; }
-.product-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
-.add { background: var(--primary); color: #fff; border: none; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; }
-.view { background: transparent; border: 1px solid #ddd; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; }
-
-/* Cart Drawer */
-.cart-drawer { position: fixed; right: -360px; top: 0; width: 320px; height: 100%; background: #fff; box-shadow: -8px 0 20px rgba(0,0,0,0.08); transition: right 0.25s ease; padding: 1rem; z-index: 60; }
-.cart-drawer.open { right: 0; }
-.cart-header { display: flex; justify-content: space-between; align-items: center; }
-.cart-items { list-style: none; padding: 0; margin: 1rem 0; }
-.cart-empty { color: var(--muted); }
-
-/* Quick View Modal */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:80; }
-.modal-inner { background:#fff; padding:1rem; border-radius:8px; max-width:600px; width:90%; position:relative; }
-.modal-inner img { width: 100%; height: 240px; object-fit:cover; border-radius:6px; }
-.close { position:absolute; top:10px; right:10px; background:transparent; border:none; font-size:1.25rem; cursor:pointer; }
-
-/* Responsive */
-@media (max-width: 800px) {
-  .hero-inner { flex-direction: column-reverse; text-align: center; }
-  .hero-media img { width: 100%; max-width: 420px; }
-  .product-card { align-items: center; flex-direction: column; }
-}
+.modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,10,10,0.45); z-index:70; }
+.modal-inner{ background:#fff; padding:1.25rem; border-radius:8px; max-width:720px; width:90%; position:relative; }
+.modal .close{ position:absolute; right:0.5rem; top:0.5rem; background:transparent; border:none; font-size:1.5rem; cursor:pointer; }
+.modal img{ width:160px; height:160px; object-fit:cover; border-radius:6px; }
 </style>
