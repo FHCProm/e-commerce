@@ -174,6 +174,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useCart } from '~/composables/useCart'  // fix path if needed
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Carousel slides and logic (unchanged)
 const slides = [
@@ -210,7 +213,7 @@ const trackStyle = computed(() => ({
 function nextSlide() { currentIndex.value = (currentIndex.value + 1) % slides.length }
 function prevSlide() { currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length }
 function goToSlide(i) { currentIndex.value = i }
-function onPrimaryCta() { scrollToProducts() }
+function onPrimaryCta() { goToListing() }
 function onSecondaryCta() { scrollToProducts() }
 let intervalId = null
 function startAutoplay() { stopAutoplay(); intervalId = setInterval(nextSlide, 5000) }
@@ -302,6 +305,10 @@ function addToCartWithSize() {
 
 function openCart() { cartOpen.value = true }
 function openQuickView(product) { quickViewProduct.value = product }
+
+function goToListing(){
+  router.push('/productList')
+}
 
 function scrollToProducts() {
   const el = productsSection.value

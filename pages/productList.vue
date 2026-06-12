@@ -1,58 +1,6 @@
 <template>
   <main>
-    <section class="hero">
-      <div class="container hero-shell">
-        <div class="hero-main reveal visible">
-          <div class="intro-animate">
-            <span class="eyebrow">Built for grip · comfort · endurance</span>
-            <h1>Gloves that work as hard as your hands do.</h1>
-            <p class="hero-copy">
-              Explore precision-crafted gloves for industrial safety, training, cold weather, and daily performance. Durable materials, ergonomic fit, and dependable protection—without compromising dexterity.
-            </p>
 
-            <div class="hero-meta">
-              <div class="metric">
-                <strong>124</strong>
-                <span>Products in stock</span>
-              </div>
-              <div class="metric">
-                <strong>4.8/5</strong>
-                <span>Average customer rating</span>
-              </div>
-              <div class="metric">
-                <strong>48h</strong>
-                <span>Fast dispatch available</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <aside class="hero-side reveal">
-          <div class="mini-panel glove-art">
-            <div class="glove-illustration" aria-hidden="true">
-              <div class="palm"></div>
-              <div class="thumb"></div>
-              <div class="finger f1"></div>
-              <div class="finger f2"></div>
-              <div class="finger f3"></div>
-              <div class="finger f4"></div>
-            </div>
-          </div>
-
-          <div class="mini-panel">
-            <h3>Engineered for every environment</h3>
-            <p>
-              From anti-slip coated workwear to insulated winter essentials, our catalog is organized to help customers find the exact glove for the task.
-            </p>
-          </div>
-
-          <div class="mini-panel hero-note">
-            <span class="tag">In stock now</span>
-            <strong>Best sellers refreshed weekly</strong>
-          </div>
-        </aside>
-      </div>
-    </section>
 
     <section class="section-bar">
       <div class="container">

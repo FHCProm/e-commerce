@@ -29,6 +29,7 @@ import { watch } from 'vue'
 
 const router = useRouter()
 
+
 // Use the composable to get reactive cart and cartCount
 const { cartCount } = useCart()
 
