@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+ 
 }
 
 model Category {
@@ -26,12 +27,16 @@ model Product {
   id          Int       @id @default(autoincrement())
   title       String
   price       Float
+  image       String?   // Add this field to store image URL or path, optional
+  short       String?   // Optional short description
+  full        String?   // Optional full description
   category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  Int
   size        String?   // Optional size field
   createdAt   DateTime  @default(now())
   inventory   Inventory?
 }
+
 
 model Inventory {
   id         Int      @id @default(autoincrement())

@@ -48,7 +48,7 @@ function goToAbout() {
 }
 
 function goToContactUs() {
-  router.push('/contactUs')
+  router.push('/addProduct')
 }
 
 function goToProductList() {
