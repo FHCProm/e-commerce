@@ -4,7 +4,7 @@ import { prisma } from './utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { title, short, full, price, image, type: categoryName, sizes = [], quantity = 0 } = body
+  const { title, short, full, price, image, categoryName, sizes = [], quantity = 0 } = body
 
   if (!title || !categoryName || price == null) {
     throw createError({ statusCode: 400, statusMessage: 'Missing required fields' })
@@ -24,12 +24,14 @@ export default defineEventHandler(async (event) => {
         data: {
           title,
           price: Number(price),
-          size: s,
+          size: s || null,
           categoryId: category.id,
+          short: short || null,
+          full: full || null,
+          image: image || null,
           inventory: {
             create: { quantity: Number(quantity) },
           },
-          // You can extend Product model to store short/full/image if needed
         },
       })
       createdProducts.push(product)
@@ -41,6 +43,9 @@ export default defineEventHandler(async (event) => {
         price: Number(price),
         size: null,
         categoryId: category.id,
+        short: short || null,
+        full: full || null,
+        image: image || null,
         inventory: {
           create: { quantity: Number(quantity) },
         },
@@ -49,5 +54,5 @@ export default defineEventHandler(async (event) => {
     createdProducts.push(product)
   }
 
-  return { created: createdProducts }
+  return { created: createdProducts, category }
 })

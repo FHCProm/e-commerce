@@ -31,28 +31,31 @@
           </div>
         </div>
 
-        <div class="row grid2">
-          <div>
-            <label>Category*</label>
-            <div class="category-row">
-              <select v-model="category" @change="onCategorySelect">
-                <option value="">Select category</option>
-                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-              </select>
-              <input
-                v-model="categoryInput"
-                class="small-input"
-                placeholder="or type a new category"
-                @input="onCategoryInput"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label>Image path / URL</label>
-            <input v-model="image" type="text" placeholder="/images/index/nitrile_blue.JPG" />
-          </div>
+      <div class="row grid2">
+      <div>
+        <label>Category*</label>
+        <div class="category-row">
+        <select v-model="category" @change="onCategorySelect">
+        <option value="">Select category</option>
+        <option v-for="c in categories" :key="c.id" :value="c.name">
+          {{ c.name }}
+        </option>
+      </select>
+          <input
+            v-model="categoryInput"
+            class="small-input"
+            placeholder="or type a new category"
+            @input="onCategoryInput"
+          />
         </div>
+      </div>
+
+      <div>
+        <label>Image path / URL</label>
+        <input v-model="image" type="text" placeholder="/images/index/nitrile_blue.JPG" />
+      </div>
+    </div>
+
 
         <div class="row">
           <label>Sizes (press Enter or click Add)</label>
@@ -141,25 +144,24 @@ export default {
       }
     }
 
-    // Default categories
-    const defaultCategories = ['Nitrile', 'Latex', 'Work Gloves']
-    const categories = ref([...defaultCategories])
+
+    const categories = ref([])
 
     // On mounted, you could fetch categories from API and merge with defaults if needed
     async function fetchCategories() {
-      try {
-        const res = await fetch('/api/categories')
-        if (res.ok) {
-          const data = await res.json()
-          // Merge fetched categories with defaultCategories, avoiding duplicates
-          const fetched = data.map(c => (typeof c === 'string' ? c : c.name))
-          categories.value = Array.from(new Set([...defaultCategories, ...fetched]))
-        }
-      } catch (e) {
-        // If fetch fails, keep default categories
-        categories.value = [...defaultCategories]
+    try {
+      const res = await fetch('/api/category')
+      if (res.ok) {
+        const data = await res.json()
+        categories.value = data // data is an array of { id, name }
       }
+    } catch (e) {
+      categories.value = [] // fallback: empty if fetch fails
     }
+  }
+
+
+
     onMounted(fetchCategories)
 
     // Synchronize category selection and input field
@@ -192,65 +194,64 @@ export default {
     const busy = ref(false)
     const message = ref('')
 
-    async function submitForm() {
-      validate()
-      if (!isValid.value) {
-        message.value = 'Please fill required fields.'
-        return
-      }
-      busy.value = true
-      message.value = ''
+async function submitForm() {
+  validate()
+  if (!isValid.value) {
+    message.value = 'Please fill required fields.'
+    return
+  }
+  busy.value = true
+  message.value = ''
 
-      // Determine final category value: typed input overrides dropdown if present
-      const finalCategory = categoryInput.value.trim() || category.value.trim()
-
-      try {
-        const payload = {
-          title: title.value,
-          short: shortDesc.value,
-          full: fullDesc.value,
-          price: Number(price.value),
-          image: image.value,
-          type: finalCategory,
-          sizes: sizes.value,
-          quantity: Number(quantity.value || 0),
-        }
-
-        const res = await fetch('/api/product', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!res.ok) {
-          const err = await res.json()
-          throw new Error(err.message || 'Failed to create product')
-        }
-
-        message.value = 'Product(s) created successfully.'
-        resetForm()
-        // Optionally navigate to product list page
-        // router.push('/productList')
-      } catch (err) {
-        message.value = err.message || 'Failed to create product'
-      } finally {
-        busy.value = false
-      }
+  try {
+    const payload = {
+      title: title.value,
+      short: shortDesc.value,
+      full: fullDesc.value,
+      price: Number(price.value),
+      image: image.value,
+      categoryName: categoryInput.value.trim() || category.value.trim(),
+      sizes: sizes.value,
+      quantity: Number(quantity.value || 0),
     }
 
-    function resetForm() {
-      title.value = ''
-      shortDesc.value = ''
-      fullDesc.value = ''
-      price.value = ''
-      image.value = ''
-      category.value = ''
-      categoryInput.value = ''
-      sizes.value = []
-      quantity.value = 0
-      message.value = ''
-      isValid.value = false
+    const res = await fetch('/api/product', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.message || 'Failed to create product')
     }
+
+    const data = await res.json()
+    message.value = `Product(s) created successfully under category: ${data.category.name}`
+    resetForm()
+  } catch (err) {
+    message.value = err.message || 'Failed to create product'
+  } finally {
+    busy.value = false
+  }
+}
+
+
+function resetForm() {
+  title.value = ''
+  shortDesc.value = ''
+  fullDesc.value = ''
+  price.value = ''
+  image.value = ''
+  category.value = ''
+  categoryInput.value = ''
+  sizes.value = []        // clear all sizes
+  quantity.value = 0
+  message.value = ''
+  isValid.value = false
+}
+
+
 
     return {
       title,

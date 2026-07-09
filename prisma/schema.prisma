@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated"
+  output   = "../generated/prisma"
 
 }
 
@@ -40,7 +40,8 @@ model Product {
 
 model Inventory {
   id         Int      @id @default(autoincrement())
-  product    Product  @relation(fields: [productId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  Int      @unique
-  quantity   Int      @default(0)  // Quantity available for this product
+  quantity   Int      @default(0)
 }
+
