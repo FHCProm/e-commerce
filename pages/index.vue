@@ -80,49 +80,60 @@
     <div class="feature">Worldwide shipping</div>
   </section>
 
-  <section class="products container" ref="productsSection">
-    <div class="products-header">
-      <h2>Featured Gloves</h2>
-      <div class="filters">
-        <select v-model="filters.type">
-          <option value="">All types</option>
-          <option value="nitrile">Nitrile</option>
-          <option value="latex">Latex</option>
-          <option value="work">Work Gloves</option>
-        </select>
+<section class="products container" ref="productsSection">
+  <div class="products-header">
+    <h2>Featured Gloves</h2>
+    <div class="filters">
+      <!-- Category filter -->
+      <select v-model="filters.type">
+        <option value="">All types</option>
+        <option
+          v-for="c in uniqueCategories"
+          :key="c"
+          :value="c"
+        >
+          {{ c.charAt(0).toUpperCase() + c.slice(1) }}
+        </option>
+      </select>
 
-        <select v-model="filters.size">
-          <option value="">All sizes</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-        </select>
+      <!-- Size filter -->
+      <select v-model="filters.size">
+        <option value="">All sizes</option>
+        <option
+          v-for="s in uniqueSizes"
+          :key="s"
+          :value="s"
+        >
+          {{ s }}
+        </option>
+      </select>
 
-        <input v-model="search" placeholder="Search gloves..." />
-      </div>
+      <input v-model="search" placeholder="Search gloves..." />
     </div>
+  </div>
 
-    <div class="product-grid">
-      <div
-        v-for="product in filteredUniqueProducts"
-        :key="product.id"
-        class="product-card"
-      >
-        <img :src="product.image" :alt="product.name" class="product-image" />
-        <div class="product-info">
-          <h3 class="product-name">{{ product.name }}</h3>
-          <p class="product-sub">{{ product.short }}</p>
-          <p class="price">${{ product.price.toFixed(2) }}</p>
-          <div class="product-actions">
-            <button class="view" @click="openQuickView(product)">
-              Quick View
-            </button>
-          </div>
+  <div class="product-grid">
+    <div
+      v-for="product in filteredUniqueProducts"
+      :key="product.id"
+      class="product-card"
+    >
+      <img :src="product.image" :alt="product.name" class="product-image" />
+      <div class="product-info">
+        <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-sub">{{ product.short }}</p>
+        <p class="price">${{ product.price.toFixed(2) }}</p>
+        <div class="product-actions">
+          <button class="view" @click="openQuickView(product)">
+            Quick View
+          </button>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
+
+
 
   <!-- Cart & Modal (unchanged) -->
   <aside class="cart-drawer" :class="{ open: cartOpen }">
@@ -194,293 +205,178 @@
 <script>
 import { ref, reactive, computed, onMounted } from "vue";
 
-
-// hardcoded productlist
-//
-//const products = ref([
-//   { id: 1, name: 'Nitrile Exam Gloves (Powder-Free)', short: 'Medical-grade, tactile sensitivity.', full: 'Disposable nitrile gloves ideal for medical, laboratory, and food handling.', price: 12.99, image: '/images/index/nitrile_blue.JPG', type: 'nitrile', sizes: ['S','M','L'] },
-//   { id: 2, name: 'Latex Surgical Gloves', short: 'Comfort fit and excellent dexterity.', full: 'High-quality latex gloves for medical use.', price: 14.99, image: '/images/index/latex-white.png', type: 'latex', sizes: ['S','M','L','XL'] },
-//   { id: 3, name: 'Heavy-Duty Work Gloves', short: 'Reinforced palms for tough jobs.', full: 'Durable work gloves with reinforced palms.', price: 24.99, image: '/images/index/work-brown.png', type: 'work', sizes: ['M','L','XL'] },
-// ])
-
-
-
-
 export default {
   name: "IndexPage",
   setup() {
     // --- Carousel ---
     const slides = ref([
-      {
-        title: "Comfortable Nitrile Gloves",
-        subtitle: "Powder-free, medical-grade",
-        primaryCta: "Shop Nitrile",
-        secondaryCta: "Learn more",
-        image: "/images/index/nitrile_blue.JPG",
-      },
-      {
-        title: "Latex Surgical Gloves",
-        subtitle: "Excellent dexterity",
-        primaryCta: "Shop Latex",
-        secondaryCta: "Learn more",
-        image: "/images/index/latex-white.png",
-      },
-      {
-        title: "Heavy-Duty Work Gloves",
-        subtitle: "Reinforced palms",
-        primaryCta: "Shop Work Gloves",
-        secondaryCta: "Learn more",
-        image: "/images/index/work-brown.png",
-      },
-    ]);
-    const currentIndex = ref(0);
-    const track = ref(null);
-    const trackStyle = computed(() => ({
-      transform: `translateX(-${currentIndex.value * 100}%)`,
-    }));
-
-    function prevSlide() {
-      currentIndex.value =
-        (currentIndex.value - 1 + slides.value.length) % slides.value.length;
-    }
-    function nextSlide() {
-      currentIndex.value = (currentIndex.value + 1) % slides.value.length;
-    }
-    function goToSlide(i) {
-      currentIndex.value = i;
-    }
-
-    function onPrimaryCta(slide) {
-      /* optional: navigate or filter */
-    }
-    function onSecondaryCta(slide) {
-      /* optional */
-    }
-
-    function onTouchStart() {}
-    function onTouchMove() {}
-    function onTouchEnd() {}
-    function onPointerDown() {}
+      { title: "Comfortable Nitrile Gloves", subtitle: "Powder-free, medical-grade", primaryCta: "Shop Nitrile", secondaryCta: "Learn more", image: "/images/index/nitrile_blue.JPG" },
+      { title: "Latex Surgical Gloves", subtitle: "Excellent dexterity", primaryCta: "Shop Latex", secondaryCta: "Learn more", image: "/images/index/latex-white.png" },
+      { title: "Heavy-Duty Work Gloves", subtitle: "Reinforced palms", primaryCta: "Shop Work Gloves", secondaryCta: "Learn more", image: "/images/index/work-brown.png" },
+    ])
+    const currentIndex = ref(0)
+    const track = ref(null)
+    const trackStyle = computed(() => ({ transform: `translateX(-${currentIndex.value * 100}%)` }))
+    function prevSlide() { currentIndex.value = (currentIndex.value - 1 + slides.value.length) % slides.value.length }
+    function nextSlide() { currentIndex.value = (currentIndex.value + 1) % slides.value.length }
+    function goToSlide(i) { currentIndex.value = i }
 
     // --- Products from API ---
-    const rawProducts = ref([]);
-    const products = ref([]);
-
-    const loading = ref(false);
-    const loadError = ref(null);
+    const rawProducts = ref([])
+    const products = ref([])
+    const loading = ref(false)
+    const loadError = ref(null)
 
     async function fetchProducts() {
-      loading.value = true;
-      loadError.value = null;
-
+      loading.value = true
+      loadError.value = null
       try {
-        const res = await fetch("/api/product");
-        if (!res.ok) {
-          let msg = "Failed to fetch products";
-          try {
-            const err = await res.json();
-            msg = err?.message || msg;
-          } catch (_) {}
-          throw new Error(msg);
-        }
+        const res = await fetch("/api/product")
+        if (!res.ok) throw new Error("Failed to fetch products")
+        const data = await res.json()
+        let items = Array.isArray(data) ? data : (data?.data || data?.products || [])
+        rawProducts.value = items
 
-        const data = await res.json();
-
-        // Handle common wrappers if needed
-        let items = [];
-        if (Array.isArray(data)) {
-          items = data;
-        } else if (data && Array.isArray(data.data)) {
-          items = data.data;
-        } else if (data && Array.isArray(data.products)) {
-          items = data.products;
-        } else {
-          items = [];
-        }
-
-        rawProducts.value = items;
-
-        products.value = items.map((p) => ({
-          id: p.id,
-          name: p.title || p.name || "Untitled",
-          short: p.short || p.subtitle || "",
-          full: p.full || "",
-          price: Number(p.price) || 0,
-          image: p.image || "/images/placeholder.png",
-          type:
-            p.category && p.category.name
-              ? String(p.category.name).toLowerCase()
-              : p.type
-                ? String(p.type).toLowerCase()
-                : "",
-          size: p.size || null,
-          sizes: p.size ? [p.size] : Array.isArray(p.sizes) ? p.sizes : [],
-          inventory: p.inventory ? Number(p.inventory.quantity || 0) : 0,
-          raw: p,
-        }));
+        products.value = items.map((p) => {
+          // normalize category/type names
+          let type = ""
+          if (p.category?.name) {
+            type = p.category.name.toLowerCase().replace(/\s+gloves?$/, "")
+          } else if (p.type) {
+            type = p.type.toLowerCase().replace(/\s+gloves?$/, "")
+          }
+          return {
+            id: p.id,
+            name: p.title || p.name || "Untitled",
+            short: p.short || p.subtitle || "",
+            full: p.full || "",
+            price: Number(p.price) || 0,
+            image: p.image || "/images/placeholder.png",
+            type,
+            size: p.size || null,
+            sizes: p.size ? [p.size] : Array.isArray(p.sizes) ? p.sizes : [],
+            inventory: p.inventory ? Number(p.inventory.quantity || 0) : 0,
+            raw: p,
+          }
+        })
       } catch (err) {
-        loadError.value = err.message || String(err);
-        products.value = [];
-        rawProducts.value = [];
+        loadError.value = err.message || String(err)
+        products.value = []
+        rawProducts.value = []
       } finally {
-        loading.value = false;
+        loading.value = false
       }
     }
 
-    onMounted(fetchProducts);
+    onMounted(fetchProducts)
 
     // --- Filters & search ---
-    const filters = reactive({
-      type: "",
-      size: "",
-    });
-    const search = ref("");
+    const filters = reactive({ type: "", size: "" })
+    const search = ref("")
 
-    // Filtered products before deduplication
+    // Build dynamic filter options from products
+    const uniqueCategories = computed(() => {
+      const set = new Set()
+      for (const p of products.value) {
+        if (p.type) {
+        console.log("from unique",p.type)
+        set.add(p.type.toLowerCase())
+        }
+      }
+      return Array.from(set)
+    })
+
+
+
+    const uniqueSizes = computed(() => {
+      const set = new Set()
+      for (const p of products.value) {
+        if (Array.isArray(p.sizes)) {
+          p.sizes.forEach(s => set.add(s))
+        } else if (p.size) {
+          set.add(p.size)
+        }
+      }
+      return Array.from(set)
+    })
+
     const filteredProducts = computed(() => {
-      const q = search.value.trim().toLowerCase();
+      const q = search.value.trim().toLowerCase()
       return products.value.filter((p) => {
         if (filters.type) {
-          if (
-            !p.type ||
-            !p.type.toLowerCase().includes(filters.type.toLowerCase())
-          )
-            return false;
+          if (!p.type || p.type.toLowerCase() !== filters.type.toLowerCase()) return false
         }
         if (filters.size) {
-          const s = filters.size;
-          const hasSize =
-            p.size === s || (Array.isArray(p.sizes) && p.sizes.includes(s));
-          if (!hasSize) return false;
+          const s = filters.size
+          const hasSize = p.size === s || (Array.isArray(p.sizes) && p.sizes.includes(s))
+          if (!hasSize) return false
         }
         if (q) {
-          const hay = `${p.name} ${p.short} ${p.full} ${p.type}`.toLowerCase();
-          if (!hay.includes(q)) return false;
+          const hay = `${p.name} ${p.short} ${p.full} ${p.type}`.toLowerCase()
+          if (!hay.includes(q)) return false
         }
-        return true;
-      });
-    });
+        return true
+      })
+    })
 
-    // Deduplicate filtered products by name (title)
     const filteredUniqueProducts = computed(() => {
-      const map = new Map();
+      const map = new Map()
       for (const p of filteredProducts.value) {
-        if (!map.has(p.name)) {
-          map.set(p.name, p);
-        }
+        if (!map.has(p.name)) map.set(p.name, p)
       }
-      return Array.from(map.values());
-    });
+      return Array.from(map.values())
+    })
 
-    // --- Quick View and size selection ---
-    const quickViewProduct = ref(null);
-    const selectedSize = ref(null);
-    const selectedQuantity = ref(1);
-
+    // --- Quick View & Cart ---
+    const quickViewProduct = ref(null)
+    const selectedSize = ref(null)
+    const selectedQuantity = ref(1)
     function getAvailableSizesFor(product) {
-      if (!product) return [];
-      const variants = products.value.filter(
-        (p) => p.name === product.name && p.type === product.type && p.size,
-      );
-      const unique = Array.from(
-        new Set(variants.map((v) => v.size).filter(Boolean)),
-      );
-      return unique;
+      if (!product) return []
+      const variants = products.value.filter((p) => p.name === product.name && p.type === product.type && p.size)
+      return Array.from(new Set(variants.map((v) => v.size).filter(Boolean)))
     }
-
     function openQuickView(product) {
-      quickViewProduct.value = product;
-      selectedSize.value = null;
-      selectedQuantity.value = 1;
+      quickViewProduct.value = product
+      selectedSize.value = null
+      selectedQuantity.value = 1
     }
-
     function addToCartWithSize() {
-      if (!quickViewProduct.value || !selectedSize.value) return;
-      const variant = products.value.find(
-        (p) =>
-          p.name === quickViewProduct.value.name &&
-          p.type === quickViewProduct.value.type &&
-          p.size === selectedSize.value,
-      );
-      if (!variant) {
-        cart.value.push({
-          id: quickViewProduct.value.id,
-          name: quickViewProduct.value.name,
-          price: quickViewProduct.value.price,
-          size: selectedSize.value,
-          qty: selectedQuantity.value,
-        });
-      } else {
-        cart.value.push({
-          id: variant.id,
-          name: variant.name,
-          price: variant.price,
-          size: variant.size,
-          qty: selectedQuantity.value,
-        });
-      }
-      quickViewProduct.value = null;
-      selectedSize.value = null;
-      selectedQuantity.value = 1;
+      if (!quickViewProduct.value || !selectedSize.value) return
+      const variant = products.value.find((p) =>
+        p.name === quickViewProduct.value.name &&
+        p.type === quickViewProduct.value.type &&
+        p.size === selectedSize.value
+      )
+      cart.value.push({
+        id: variant ? variant.id : quickViewProduct.value.id,
+        name: variant ? variant.name : quickViewProduct.value.name,
+        price: variant ? variant.price : quickViewProduct.value.price,
+        size: variant ? variant.size : selectedSize.value,
+        qty: selectedQuantity.value,
+      })
+      quickViewProduct.value = null
+      selectedSize.value = null
+      selectedQuantity.value = 1
     }
-
-    const availableSizes = computed(() => {
-      return quickViewProduct.value
-        ? getAvailableSizesFor(quickViewProduct.value)
-        : [];
-    });
-
-    // --- Cart ---
-    const cart = ref([]);
-    const cartOpen = ref(false);
-
-    const cartTotal = computed(() => {
-      return cart.value.reduce(
-        (sum, item) => sum + Number(item.price) * (item.qty || 1),
-        0,
-      );
-    });
+    const availableSizes = computed(() => quickViewProduct.value ? getAvailableSizesFor(quickViewProduct.value) : [])
+    const cart = ref([])
+    const cartOpen = ref(false)
+    const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + Number(item.price) * (item.qty || 1), 0))
 
     return {
-      slides,
-      currentIndex,
-      track,
-      trackStyle,
-      prevSlide,
-      nextSlide,
-      goToSlide,
-      onTouchStart,
-      onTouchMove,
-      onTouchEnd,
-      onPointerDown,
-      onPrimaryCta,
-      onSecondaryCta,
-
-      products,
-      rawProducts,
-      loading,
-      loadError,
-      fetchProducts,
-
-      filters,
-      search,
-      filteredProducts,
-      filteredUniqueProducts,
-
-      quickViewProduct,
-      openQuickView,
-      availableSizes,
-      selectedSize,
-      selectedQuantity,
-      addToCartWithSize,
-
-      cart,
-      cartOpen,
-      cartTotal,
-    };
-  },
-};
+      slides, currentIndex, track, trackStyle, prevSlide, nextSlide, goToSlide,
+      products, rawProducts, loading, loadError, fetchProducts,
+      filters, search, filteredProducts, filteredUniqueProducts,
+      uniqueCategories, uniqueSizes,
+      quickViewProduct, openQuickView, availableSizes, selectedSize, selectedQuantity, addToCartWithSize,
+      cart, cartOpen, cartTotal
+    }
+  }
+}
 </script>
+
+
 
 <style scoped>
 .container {
