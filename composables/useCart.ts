@@ -27,7 +27,6 @@ export function useCart() {
     alert(`${product.name} (${product.size}) x${product.quantity} added to cart.`)
   }
 
-  // Update quantity or remove if quantity <= 0
   function updateQty(id, size, quantity) {
     const index = cart.value.findIndex(item => item.id === id && item.size === size)
     if (index === -1) return
@@ -39,7 +38,6 @@ export function useCart() {
     }
   }
 
-  // Remove item by id and size
   function removeItem(id, size) {
     const index = cart.value.findIndex(item => item.id === id && item.size === size)
     if (index !== -1) {
@@ -47,9 +45,8 @@ export function useCart() {
     }
   }
 
-  const cartCount = computed(() =>
-    cart.value.reduce((total, item) => total + item.quantity, 0)
-  )
+  // 👇 show number of distinct products instead of total quantity
+  const cartCount = computed(() => cart.value.length)
 
   return {
     cart,
@@ -59,3 +56,4 @@ export function useCart() {
     cartCount,
   }
 }
+

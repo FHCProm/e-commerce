@@ -202,8 +202,10 @@
   </div>
 </template>
 
+
 <script>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue"
+import { useCart } from "~/composables/useCart"
 
 export default {
   name: "IndexPage",
@@ -238,7 +240,6 @@ export default {
         rawProducts.value = items
 
         products.value = items.map((p) => {
-          // normalize category/type names
           let type = ""
           if (p.category?.name) {
             type = p.category.name.toLowerCase().replace(/\s+gloves?$/, "")
@@ -273,21 +274,13 @@ export default {
     // --- Filters & search ---
     const filters = reactive({ type: "", size: "" })
     const search = ref("")
-
-    // Build dynamic filter options from products
     const uniqueCategories = computed(() => {
       const set = new Set()
       for (const p of products.value) {
-        if (p.type) {
-        console.log("from unique",p.type)
-        set.add(p.type.toLowerCase())
-        }
+        if (p.type) set.add(p.type.toLowerCase())
       }
       return Array.from(set)
     })
-
-
-
     const uniqueSizes = computed(() => {
       const set = new Set()
       for (const p of products.value) {
@@ -299,7 +292,6 @@ export default {
       }
       return Array.from(set)
     })
-
     const filteredProducts = computed(() => {
       const q = search.value.trim().toLowerCase()
       return products.value.filter((p) => {
@@ -318,7 +310,6 @@ export default {
         return true
       })
     })
-
     const filteredUniqueProducts = computed(() => {
       const map = new Map()
       for (const p of filteredProducts.value) {
@@ -327,10 +318,14 @@ export default {
       return Array.from(map.values())
     })
 
-    // --- Quick View & Cart ---
+    // --- Quick View & Cart (using composable) ---
     const quickViewProduct = ref(null)
     const selectedSize = ref(null)
     const selectedQuantity = ref(1)
+
+    const { cart, addToCart, updateQty, removeItem, cartCount } = useCart()
+    const cartOpen = ref(false)
+
     function getAvailableSizesFor(product) {
       if (!product) return []
       const variants = products.value.filter((p) => p.name === product.name && p.type === product.type && p.size)
@@ -343,26 +338,20 @@ export default {
     }
     function addToCartWithSize() {
       if (!quickViewProduct.value || !selectedSize.value) return
-      const variant = products.value.find((p) =>
-        p.name === quickViewProduct.value.name &&
-        p.type === quickViewProduct.value.type &&
-        p.size === selectedSize.value
-      )
-      cart.value.push({
-        id: variant ? variant.id : quickViewProduct.value.id,
-        name: variant ? variant.name : quickViewProduct.value.name,
-        price: variant ? variant.price : quickViewProduct.value.price,
-        size: variant ? variant.size : selectedSize.value,
-        qty: selectedQuantity.value,
+      addToCart({
+        id: quickViewProduct.value.id,
+        name: quickViewProduct.value.name,
+        price: quickViewProduct.value.price,
+        size: selectedSize.value,
+        quantity: selectedQuantity.value, // 👈 aligned with composable
       })
+    
       quickViewProduct.value = null
       selectedSize.value = null
       selectedQuantity.value = 1
     }
     const availableSizes = computed(() => quickViewProduct.value ? getAvailableSizesFor(quickViewProduct.value) : [])
-    const cart = ref([])
-    const cartOpen = ref(false)
-    const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + Number(item.price) * (item.qty || 1), 0))
+    const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0))
 
     return {
       slides, currentIndex, track, trackStyle, prevSlide, nextSlide, goToSlide,
@@ -370,11 +359,12 @@ export default {
       filters, search, filteredProducts, filteredUniqueProducts,
       uniqueCategories, uniqueSizes,
       quickViewProduct, openQuickView, availableSizes, selectedSize, selectedQuantity, addToCartWithSize,
-      cart, cartOpen, cartTotal
+      cart, cartOpen, cartTotal, cartCount, updateQty, removeItem
     }
   }
 }
 </script>
+
 
 
 
